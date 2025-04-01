@@ -1,11 +1,12 @@
-import streamlit as st
+import streamlit as st # type: ignore
 import os
 import io
 import base64
-from dotenv import load_dotenv
-import pdf2image
-from docx import Document
-import google.generativeai as genai
+from dotenv import load_dotenv # type: ignore
+import pdf2image # type: ignore
+from docx import Document # type: ignore
+import google.generativeai as genai # type: ignore
+import re
 
 # Load API Key
 load_dotenv()
@@ -35,6 +36,14 @@ def process_uploaded_file(uploaded_file):
     else:
         return None
 
+# Function to extract percentage or handle non-AI content
+def extract_percentage_from_result(result):
+    match = re.search(r'\d+', result)
+    if match:
+        return int(match.group(0))
+    else:
+        return None
+
 # Streamlit UI
 st.set_page_config(page_title="AI Detection Meter", page_icon="🤖", layout="wide")
 st.title("AI Detection Meter 📊")
@@ -51,9 +60,13 @@ with tab1:
                 result = get_ai_detection_response(input_text)
             st.success("✅ Analysis Complete!")
             st.subheader("🧠 AI Detection Score")
-            percentage = int(''.join(filter(str.isdigit, result)))  # Extract percentage
-            st.metric(label="AI-Generated Percentage", value=f"{percentage}%")
-            st.progress(percentage / 100)
+            percentage = extract_percentage_from_result(result)
+            if percentage is not None:
+                st.metric(label="AI-Generated Percentage", value=f"{percentage}%")
+                st.progress(percentage / 100)
+            else:
+                st.write("❌ The content is not AI-generated.")
+
         else:
             st.error("⚠️ Please enter some text.")
 
@@ -67,9 +80,12 @@ with tab2:
                     result = get_ai_detection_response(file_content)
                     st.success("✅ Analysis Complete!")
                     st.subheader("🧠 AI Detection Score")
-                    percentage = int(''.join(filter(str.isdigit, result)))
-                    st.metric(label="AI-Generated Percentage", value=f"{percentage}%")
-                    st.progress(percentage / 100)
+                    percentage = extract_percentage_from_result(result)
+                    if percentage is not None:
+                        st.metric(label="AI-Generated Percentage", value=f"{percentage}%")
+                        st.progress(percentage / 100)
+                    else:
+                        st.write("❌ The content is not AI-generated.")
                 else:
                     st.error("⚠️ Unsupported file format.")
         else:
